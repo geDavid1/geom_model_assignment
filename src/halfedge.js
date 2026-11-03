@@ -226,3 +226,71 @@ export function verifyDCEL(dcel) {
     }
   };
 }
+
+/**
+ * Collects the one-ring neighborhood of a vertex using DCEL traversal.
+ * Handles both closed manifolds and boundary vertices.
+ * 
+ * @param {Vertex} vertex
+ * @returns {{
+ *   neighbors: Vertex[],
+ *   valence: number,
+ *   isBoundary: boolean,
+ *   boundaryNeighbors: Vertex[]
+ * }}
+ */
+export function getOneRing(vertex) {
+  let curr = vertex.halfEdge;
+  if (!curr) {
+    return { neighbors: [], valence: 0, isBoundary: false, boundaryNeighbors: [] };
+  }
+
+  // If the starting halfedge has no face (outer boundary), use twin
+  if (!curr.face && curr.twin) {
+    curr = curr.twin;
+  }
+
+  let start = curr;
+  let isBoundary = false;
+
+  // Rewind as far as possible using prev.twin to reach the boundary start (if on boundary)
+  while (curr.face && curr.prev && curr.prev.twin && curr.prev.twin.face) {
+    curr = curr.prev.twin;
+    if (curr === start) break; // full loop (interior vertex)
+  }
+
+  if (!curr.prev || !curr.prev.twin || !curr.prev.twin.face) {
+    isBoundary = true;
+  }
+
+  const neighbors = [];
+  const startHE = curr;
+  let he = startHE;
+  let count = 0;
+
+  if (isBoundary) {
+    // For boundary vertex, first neighbor is the origin of incoming boundary edge
+    if (he.prev) {
+      neighbors.push(he.prev.origin);
+    }
+    while (he && count++ < 500) {
+      neighbors.push(he.twin.origin);
+      if (!he.twin || !he.twin.face) break;
+      he = he.twin.next;
+    }
+  } else {
+    // Interior vertex: full cyclic loop
+    while (count++ < 500) {
+      neighbors.push(he.twin.origin);
+      he = he.twin.next;
+      if (!he || he === startHE) break;
+    }
+  }
+
+  return {
+    neighbors,
+    valence: neighbors.length,
+    isBoundary,
+    boundaryNeighbors: isBoundary && neighbors.length >= 2 ? [neighbors[0], neighbors[neighbors.length - 1]] : []
+  };
+}
