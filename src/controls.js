@@ -32,6 +32,20 @@ export class Controls {
         <input type="checkbox" id="wireframe-toggle" checked />
       </div>
 
+      <div class="control-group">
+        <label>Subdivision</label>
+        <div class="control-row">
+          <select id="subdiv-scheme" style="flex: 1;">
+            <option value="loop">Loop (Approximating)</option>
+            <option value="butterfly">Mod. Butterfly (Interpolating)</option>
+          </select>
+          <button id="subdiv-btn">Subdivide</button>
+        </div>
+        <div style="font-size: 11px; color: #888; display: flex; justify-content: space-between;">
+          <span id="subdiv-level">Level: 0</span>
+        </div>
+      </div>
+
       <div id="stats">
         <strong>Mesh Stats:</strong><br />
         <span id="stat-verts">Vertices: 0</span><br />
@@ -68,6 +82,21 @@ export class Controls {
         this.callbacks.onWireframeToggle(e.target.checked);
       }
     });
+
+    const subdivBtn = this.container.querySelector('#subdiv-btn');
+    const subdivScheme = this.container.querySelector('#subdiv-scheme');
+    subdivBtn.addEventListener('click', () => {
+      if (this.callbacks.onSubdivide) {
+        this.callbacks.onSubdivide(subdivScheme.value);
+      }
+    });
+  }
+
+  updateSubdivLevel(level) {
+    const levelSpan = this.container.querySelector('#subdiv-level');
+    if (levelSpan) {
+      levelSpan.textContent = `Level: ${level}`;
+    }
   }
 
   updateStats({ vertexCount, faceCount, halfEdgeCount, valid, errors }) {
